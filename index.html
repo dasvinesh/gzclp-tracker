@@ -3,236 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>~/GZCLP_TRACKER</title>
+    <title>GZCLP Tracker</title>
     <style>
-        :root { --bg: #000000; --fg: #ffffff; --border: 2px solid #ffffff; }
+        :root { 
+            --bg: #000000; 
+            --card: #1c1c1e; 
+            --text: #ffffff; 
+            --subtext: #8e8e93; 
+            --accent: #ffffff; 
+            --border: #333333;
+            --btn-gray: #2c2c2e;
+        }
         body { 
             background-color: var(--bg); 
-            color: var(--fg); 
-            font-family: "Courier New", Courier, "Lucida Sans Typewriter", monospace; 
+            color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; 
             margin: 0; 
-            padding: 15px; 
+            padding: 20px 15px; 
             display: flex; 
             flex-direction: column; 
             min-height: 100vh; 
         }
         h1 { 
             text-align: center; 
-            font-size: 1.4rem; 
-            margin-bottom: 25px; 
-            border-bottom: var(--border); 
-            padding-bottom: 10px;
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            letter-spacing: 1px;
+            margin-bottom: 20px; 
+            color: var(--subtext);
+            text-transform: uppercase;
         }
-        h1::before { content: "> "; }
-        h1::after { content: "_"; animation: blink 1s step-end infinite; }
         
-        @keyframes blink { 50% { opacity: 0; } }
-
         select { 
-            background: var(--bg); 
-            color: var(--fg); 
-            border: var(--border); 
-            padding: 10px; 
-            font-family: inherit; 
+            background: var(--card); 
+            color: var(--text); 
+            border: 1px solid var(--border); 
+            padding: 12px; 
             font-size: 1rem; 
             width: 100%; 
             margin-bottom: 25px; 
-            border-radius: 0; /* Terminal style sharp corners */
+            border-radius: 10px; 
             -webkit-appearance: none;
             text-align-last: center;
+            font-weight: 500;
         }
 
         .card { 
-            border: var(--border); 
-            padding: 15px; 
-            margin-bottom: 20px; 
+            background-color: var(--card); 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            border-radius: 14px;
+            border: 1px solid #2c2c2e;
         }
 
-        .tier-label { 
-            font-size: 0.8rem; 
-            border-bottom: 1px dashed #555; 
-            padding-bottom: 5px; 
-            margin-bottom: 10px; 
-            display: block;
+        .tier-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .t1-badge { background: #3a3a3c; color: #ffcc00; }
+        .t2-badge { background: #3a3a3c; color: #64d2ff; }
+        .t3-badge { background: #3a3a3c; color: #bf5af2; }
+
+        .lift-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 15px;
         }
 
         .lift-name { 
-            font-size: 1.5rem; 
-            font-weight: bold; 
-            text-transform: uppercase; 
-            margin: 10px 0; 
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            margin: 0;
         }
 
-        .details { 
-            font-size: 1.1rem; 
-            margin: 15px 0; 
-            display: flex; 
-            justify-content: space-between; 
+        .lift-scheme {
+            font-size: 0.9rem;
+            color: var(--subtext);
+            font-weight: 500;
+        }
+
+        .weight-container {
+            display: flex;
             align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 15px;
         }
 
-        /* Input styling to look like terminal output */
         .weight-edit { 
-            background: var(--bg); 
+            background: transparent; 
             border: none; 
-            border-bottom: 2px solid var(--fg); 
-            color: var(--fg); 
-            font-size: 1.3rem; 
-            width: 90px; 
+            color: var(--text); 
+            font-size: 2rem; 
+            width: 100px; 
             text-align: right; 
             font-family: inherit; 
-            font-weight: bold;
+            font-weight: 700;
+            margin-right: 5px;
         }
+        
+        .unit { color: var(--subtext); font-size: 1rem; font-weight: 500; }
 
-        .btn-group { display: flex; gap: 15px; margin-top: 20px; }
+        .btn-group { display: flex; gap: 10px; }
 
         button { 
             flex: 1; 
-            background: var(--bg); 
-            color: var(--fg); 
-            border: var(--border); 
-            padding: 15px; 
-            font-family: inherit; 
-            font-size: 1rem; 
-            font-weight: bold; 
+            background: var(--btn-gray); 
+            color: var(--text); 
+            border: none; 
+            padding: 14px; 
+            border-radius: 10px; 
+            font-size: 0.95rem; 
+            font-weight: 600; 
             cursor: pointer; 
-            text-transform: uppercase;
+            transition: background 0.2s;
         }
 
-        /* Invert colors on touch */
-        button:active { 
-            background: var(--fg); 
-            color: var(--bg); 
-        }
+        button:active { filter: brightness(1.3); }
+        .btn-complete { background-color: #ffffff; color: #000000; }
+        .btn-fail { background-color: #3a3a3c; color: #ff453a; }
 
         .reset-btn { 
-            background: var(--bg); 
-            color: var(--fg); 
-            border: 1px solid #555; 
+            background: transparent; 
+            color: var(--subtext); 
+            border: 1px solid var(--border); 
             margin-top: auto; 
-            padding: 10px; 
-            font-size: 0.7rem; 
-            width: 100%;
+            padding: 12px; 
+            font-size: 0.8rem; 
         }
     </style>
 </head>
 <body>
 
-    <h1>ROOT@IPHONE:~/GZCLP</h1>
+    <h1>My GZCLP</h1>
     
     <select id="workoutSelector" onchange="renderWorkout()">
-        <option value="A1">EXEC: DAY_A1 (SQUAT/BENCH)</option>
-        <option value="B1">EXEC: DAY_B1 (OHP/DL)</option>
-        <option value="A2">EXEC: DAY_A2 (BENCH/SQUAT)</option>
-        <option value="B2">EXEC: DAY_B2 (DL/OHP)</option>
+        <option value="A1">Day A1 (Squat/Bench)</option>
+        <option value="B1">Day B1 (OHP/DL)</option>
+        <option value="A2">Day A2 (Bench/Squat)</option>
+        <option value="B2">Day B2 (DL/OHP)</option>
     </select>
 
     <div id="app"></div>
 
-    <button class="reset-btn" onclick="hardReset()">[ SYSTEM RESET ]</button>
+    <button class="reset-btn" onclick="hardReset()">Reset All Data</button>
 
 <script>
-// --- DEFAULT DATA (KG) ---
+// --- DATA STRUCTURE (Updated for T3) ---
 const defaultData = {
     A1: {
         t1: { name: "Squat", weight: 100, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 5 },
-        t2: { name: "Bench", weight: 60, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 2.5 }
+        t2: { name: "Bench", weight: 60, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 2.5 },
+        t3a: { name: "Seated Row", weight: 40, stage: 0, stages: ["3x15+"], inc: 2.5 },
+        t3b: { name: "Pec Deck", weight: 30, stage: 0, stages: ["3x15+"], inc: 2.5 }
     },
     B1: {
-        t1: { name: "OHP", weight: 40, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 2.5 },
-        t2: { name: "Deadlift", weight: 100, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 5 }
-    },
-    A2: {
-        t1: { name: "Bench", weight: 70, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 2.5 },
-        t2: { name: "Squat", weight: 80, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 5 }
-    },
-    B2: {
-        t1: { name: "Deadlift", weight: 120, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 5 },
-        t2: { name: "OHP", weight: 30, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 2.5 }
-    }
-};
-
-// --- APP STATE ---
-let data = JSON.parse(localStorage.getItem('gzclpData_kg')) || defaultData;
-
-function save() {
-    localStorage.setItem('gzclpData_kg', JSON.stringify(data));
-    renderWorkout();
-}
-
-function updateWeight(day, tier, newWeight) {
-    data[day][tier].weight = parseFloat(newWeight);
-    save();
-}
-
-// --- LOGIC CORE ---
-function handleResult(day, tier, result) {
-    const lift = data[day][tier];
-    
-    if (result === 'success') {
-        // SUCCESS: Add Inc
-        lift.weight += lift.inc;
-    } else {
-        // FAIL: Logic depends on Tier
-        if (lift.stage < 2) {
-            // Move to next rep scheme
-            lift.stage++; 
-            alert(`>> FAILURE DETECTED.\n>> SWITCHING SCHEME: ${lift.stages[lift.stage]}`);
-        } else {
-            // FAILED LAST STAGE: Reset
-            lift.stage = 0; 
-            const oldWeight = lift.weight;
-            
-            // RESET FORMULA: 85% rounded to nearest 2.5kg
-            // (Weight * 0.85) / 2.5 = X steps. Round X. X * 2.5 = New Weight.
-            lift.weight = 2.5 * Math.round((lift.weight * 0.85) / 2.5);
-            
-            alert(`>> CYCLE COMPLETE.\n>> RESETTING: ${oldWeight}kg -> ${lift.weight}kg`);
-        }
-    }
-    save();
-}
-
-// --- RENDER ---
-function renderWorkout() {
-    const day = document.getElementById('workoutSelector').value;
-    const app = document.getElementById('app');
-    app.innerHTML = '';
-
-    ['t1', 't2'].forEach(tier => {
-        const lift = data[day][tier];
-        const currentScheme = lift.stages[lift.stage];
-        
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <span class="tier-label">[ ${tier.toUpperCase()} :: ${currentScheme} ]</span>
-            <div class="lift-name">${lift.name}</div>
-            <div class="details">
-                <span>LOAD:</span>
-                <span>
-                    <input type="number" class="weight-edit" value="${lift.weight}" 
-                    onchange="updateWeight('${day}', '${tier}', this.value)" step="2.5"> KG
-                </span>
-            </div>
-            <div class="btn-group">
-                <button onclick="handleResult('${day}', '${tier}', 'fail')">FAIL</button>
-                <button onclick="handleResult('${day}', '${tier}', 'success')">COMPLETE</button>
-            </div>
-        `;
-        app.appendChild(card);
-    });
-}
-
-function hardReset() {
-    if(confirm(">> EXECUTE FACTORY RESET? ALL DATA WILL BE LOST.")) {
-        localStorage.removeItem('gzclpData_kg');
-        location.reload();
-    }
-}
-
-// Init
-renderWorkout();
-</script>
-</body>
-</html>
+        t1: { name: "OHP", weight: 40, stage: 0, stages: ["
