@@ -107,4 +107,210 @@
             font-weight: 500;
         }
 
-        /* WEIGHT
+        /* WEIGHT INPUT */
+        .weight-input-group {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            background: #2c2c2e;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .weight-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            width: 70px;
+            text-align: right;
+            font-family: inherit;
+        }
+        
+        .unit { color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* BUTTONS */
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:active { opacity: 0.7; }
+
+        .btn-fail { background: rgba(255, 69, 58, 0.15); color: var(--red); }
+        .btn-success { background: var(--blue); color: white; }
+
+        /* RESET LINK */
+        .reset-link {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 40px;
+            text-decoration: underline;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">Current Workout</div>
+        <select id="workoutSelector" onchange="renderWorkout()">
+            <option value="A1">Day A1 (Squat/Bench)</option>
+            <option value="B1">Day B1 (OHP/Deadlift)</option>
+            <option value="A2">Day A2 (Bench/Squat)</option>
+            <option value="B2">Day B2 (Deadlift/OHP)</option>
+        </select>
+    </div>
+
+    <div id="app" class="workout-list">
+        </div>
+
+    <div class="reset-link" onclick="hardReset()">Reset All Data</div>
+
+<script>
+// --- DATA: GZCLP SPLIT ---
+const defaultData = {
+    A1: {
+        t1: { name: "Squat", weight: 100, stage: 0, stages: ["5 sets × 3 reps", "6 sets × 2 reps", "10 sets × 1 reps"], inc: 5 },
+        t2: { name: "Bench Press", weight: 60, stage: 0, stages: ["3 sets × 10 reps", "3 sets × 8 reps", "3 sets × 6 reps"], inc: 2.5 },
+        t3a: { name: "Seated Row", weight: 40, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 },
+        t3b: { name: "Pec Deck", weight: 30, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 }
+    },
+    B1: {
+        t1: { name: "Overhead Press", weight: 40, stage: 0, stages: ["5 sets × 3 reps", "6 sets × 2 reps", "10 sets × 1 reps"], inc: 2.5 },
+        t2: { name: "Deadlift", weight: 100, stage: 0, stages: ["3 sets × 10 reps", "3 sets × 8 reps", "3 sets × 6 reps"], inc: 5 },
+        t3a: { name: "Lat Pulldown", weight: 45, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 },
+        t3b: { name: "Tricep Pushdown", weight: 20, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 }
+    },
+    A2: {
+        t1: { name: "Bench Press", weight: 70, stage: 0, stages: ["5 sets × 3 reps", "6 sets × 2 reps", "10 sets × 1 reps"], inc: 2.5 },
+        t2: { name: "Squat", weight: 80, stage: 0, stages: ["3 sets × 10 reps", "3 sets × 8 reps", "3 sets × 6 reps"], inc: 5 },
+        t3a: { name: "Seated Row", weight: 40, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 },
+        t3b: { name: "Leg Curls", weight: 30, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 }
+    },
+    B2: {
+        t1: { name: "Deadlift", weight: 120, stage: 0, stages: ["5 sets × 3 reps", "6 sets × 2 reps", "10 sets × 1 reps"], inc: 5 },
+        t2: { name: "Overhead Press", weight: 30, stage: 0, stages: ["3 sets × 10 reps", "3 sets × 8 reps", "3 sets × 6 reps"], inc: 2.5 },
+        t3a: { name: "Lat Pulldown", weight: 45, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 },
+        t3b: { name: "Face Pulls", weight: 15, stage: 0, stages: ["3 sets × 15 reps"], inc: 2.5 }
+    }
+};
+
+// --- STATE MANAGEMENT ---
+let data = JSON.parse(localStorage.getItem('gzclp_strong_v4')) || defaultData;
+
+function save() {
+    localStorage.setItem('gzclp_strong_v4', JSON.stringify(data));
+    renderWorkout();
+}
+
+function updateWeight(day, tier, newWeight) {
+    if(!newWeight) return;
+    data[day][tier].weight = parseFloat(newWeight);
+    save();
+}
+
+// --- LOGIC ---
+function handleResult(day, tierName, result) {
+    const lift = data[day][tierName];
+    const isT3 = tierName.startsWith('t3');
+
+    if (isT3) {
+        // T3 Logic: Simple Progression
+        if (result === 'success') {
+            lift.weight += lift.inc;
+        } 
+        // Fail/Stay does nothing to weight/reps for T3
+    } else {
+        // T1/T2 Logic: GZCLP Progression
+        if (result === 'success') {
+            lift.weight += lift.inc;
+        } else {
+            // FAILURE LOGIC
+            if (lift.stage < 2) {
+                lift.stage++; // Switch Rep Scheme
+                alert(`Scheme Changed for next time: ${lift.stages[lift.stage]}`);
+            } else {
+                // Reset Logic (85%)
+                lift.stage = 0; 
+                const oldWeight = lift.weight;
+                lift.weight = 2.5 * Math.round((lift.weight * 0.85) / 2.5);
+                alert(`Cycle Reset: Dropping from ${oldWeight}kg to ${lift.weight}kg`);
+            }
+        }
+    }
+    save();
+}
+
+// --- RENDER ---
+function renderWorkout() {
+    const day = document.getElementById('workoutSelector').value;
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+
+    const tiers = ['t1', 't2', 't3a', 't3b'];
+    
+    tiers.forEach(tierName => {
+        const lift = data[day][tierName];
+        if (!lift) return;
+
+        // Visual setup
+        const tierLabel = tierName.toUpperCase().substring(0, 2); // T1, T2, T3
+        const isT3 = tierName.startsWith('t3');
+        const successText = isT3 ? "Done (+2.5kg)" : "Finish Workout";
+        const failText = isT3 ? "Done (Stay)" : "Fail";
+
+        const card = document.createElement('div');
+        card.className = 'exercise-card';
+        card.innerHTML = `
+            <div class="tier-badge">${tierLabel}</div>
+            
+            <div class="exercise-row">
+                <div class="exercise-info">
+                    <div class="exercise-name">${lift.name}</div>
+                    <div class="exercise-scheme">${lift.stages[lift.stage]}</div>
+                </div>
+                
+                <div class="weight-input-group">
+                    <input type="number" class="weight-input" value="${lift.weight}" 
+                        onchange="updateWeight('${day}', '${tierName}', this.value)" step="2.5" pattern="[0-9]*">
+                    <span class="unit">kg</span>
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button class="btn-fail" onclick="handleResult('${day}', '${tierName}', 'fail')">${failText}</button>
+                <button class="btn-success" onclick="handleResult('${day}', '${tierName}', 'success')">${successText}</button>
+            </div>
+        `;
+        app.appendChild(card);
+    });
+}
+
+function hardReset() {
+    if(confirm("Factory Reset: This will erase all your tracked weights. Continue?")) {
+        localStorage.removeItem('gzclp_strong_v4');
+        location.reload();
+    }
+}
+
+// Start
+renderWorkout();
+</script>
+</body>
+</html>
