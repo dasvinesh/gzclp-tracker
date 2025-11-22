@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>~/GZCLP_TRACKER</title>
+    <style>
+        :root { --bg: #000000; --fg: #ffffff; --border: 2px solid #ffffff; }
+        body { 
+            background-color: var(--bg); 
+            color: var(--fg); 
+            font-family: "Courier New", Courier, "Lucida Sans Typewriter", monospace; 
+            margin: 0; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+        h1 { 
+            text-align: center; 
+            font-size: 1.4rem; 
+            margin-bottom: 25px; 
+            border-bottom: var(--border); 
+            padding-bottom: 10px;
+        }
+        h1::before { content: "> "; }
+        h1::after { content: "_"; animation: blink 1s step-end infinite; }
+        
+        @keyframes blink { 50% { opacity: 0; } }
+
+        select { 
+            background: var(--bg); 
+            color: var(--fg); 
+            border: var(--border); 
+            padding: 10px; 
+            font-family: inherit; 
+            font-size: 1rem; 
+            width: 100%; 
+            margin-bottom: 25px; 
+            border-radius: 0; /* Terminal style sharp corners */
+            -webkit-appearance: none;
+            text-align-last: center;
+        }
+
+        .card { 
+            border: var(--border); 
+            padding: 15px; 
+            margin-bottom: 20px; 
+        }
+
+        .tier-label { 
+            font-size: 0.8rem; 
+            border-bottom: 1px dashed #555; 
+            padding-bottom: 5px; 
+            margin-bottom: 10px; 
+            display: block;
+        }
+
+        .lift-name { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            margin: 10px 0; 
+        }
+
+        .details { 
+            font-size: 1.1rem; 
+            margin: 15px 0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+
+        /* Input styling to look like terminal output */
+        .weight-edit { 
+            background: var(--bg); 
+            border: none; 
+            border-bottom: 2px solid var(--fg); 
+            color: var(--fg); 
+            font-size: 1.3rem; 
+            width: 90px; 
+            text-align: right; 
+            font-family: inherit; 
+            font-weight: bold;
+        }
+
+        .btn-group { display: flex; gap: 15px; margin-top: 20px; }
+
+        button { 
+            flex: 1; 
+            background: var(--bg); 
+            color: var(--fg); 
+            border: var(--border); 
+            padding: 15px; 
+            font-family: inherit; 
+            font-size: 1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            text-transform: uppercase;
+        }
+
+        /* Invert colors on touch */
+        button:active { 
+            background: var(--fg); 
+            color: var(--bg); 
+        }
+
+        .reset-btn { 
+            background: var(--bg); 
+            color: var(--fg); 
+            border: 1px solid #555; 
+            margin-top: auto; 
+            padding: 10px; 
+            font-size: 0.7rem; 
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ROOT@IPHONE:~/GZCLP</h1>
+    
+    <select id="workoutSelector" onchange="renderWorkout()">
+        <option value="A1">EXEC: DAY_A1 (SQUAT/BENCH)</option>
+        <option value="B1">EXEC: DAY_B1 (OHP/DL)</option>
+        <option value="A2">EXEC: DAY_A2 (BENCH/SQUAT)</option>
+        <option value="B2">EXEC: DAY_B2 (DL/OHP)</option>
+    </select>
+
+    <div id="app"></div>
+
+    <button class="reset-btn" onclick="hardReset()">[ SYSTEM RESET ]</button>
+
+<script>
+// --- DEFAULT DATA (KG) ---
+const defaultData = {
+    A1: {
+        t1: { name: "Squat", weight: 100, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 5 },
+        t2: { name: "Bench", weight: 60, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 2.5 }
+    },
+    B1: {
+        t1: { name: "OHP", weight: 40, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 2.5 },
+        t2: { name: "Deadlift", weight: 100, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 5 }
+    },
+    A2: {
+        t1: { name: "Bench", weight: 70, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 2.5 },
+        t2: { name: "Squat", weight: 80, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 5 }
+    },
+    B2: {
+        t1: { name: "Deadlift", weight: 120, stage: 0, stages: ["5x3+", "6x2+", "10x1+"], inc: 5 },
+        t2: { name: "OHP", weight: 30, stage: 0, stages: ["3x10", "3x8", "3x6"], inc: 2.5 }
+    }
+};
+
+// --- APP STATE ---
+let data = JSON.parse(localStorage.getItem('gzclpData_kg')) || defaultData;
+
+function save() {
+    localStorage.setItem('gzclpData_kg', JSON.stringify(data));
+    renderWorkout();
+}
+
+function updateWeight(day, tier, newWeight) {
+    data[day][tier].weight = parseFloat(newWeight);
+    save();
+}
+
+// --- LOGIC CORE ---
+function handleResult(day, tier, result) {
+    const lift = data[day][tier];
+    
+    if (result === 'success') {
+        // SUCCESS: Add Inc
+        lift.weight += lift.inc;
+    } else {
+        // FAIL: Logic depends on Tier
+        if (lift.stage < 2) {
+            // Move to next rep scheme
+            lift.stage++; 
+            alert(`>> FAILURE DETECTED.\n>> SWITCHING SCHEME: ${lift.stages[lift.stage]}`);
+        } else {
+            // FAILED LAST STAGE: Reset
+            lift.stage = 0; 
+            const oldWeight = lift.weight;
+            
+            // RESET FORMULA: 85% rounded to nearest 2.5kg
+            // (Weight * 0.85) / 2.5 = X steps. Round X. X * 2.5 = New Weight.
+            lift.weight = 2.5 * Math.round((lift.weight * 0.85) / 2.5);
+            
+            alert(`>> CYCLE COMPLETE.\n>> RESETTING: ${oldWeight}kg -> ${lift.weight}kg`);
+        }
+    }
+    save();
+}
+
+// --- RENDER ---
+function renderWorkout() {
+    const day = document.getElementById('workoutSelector').value;
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+
+    ['t1', 't2'].forEach(tier => {
+        const lift = data[day][tier];
+        const currentScheme = lift.stages[lift.stage];
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <span class="tier-label">[ ${tier.toUpperCase()} :: ${currentScheme} ]</span>
+            <div class="lift-name">${lift.name}</div>
+            <div class="details">
+                <span>LOAD:</span>
+                <span>
+                    <input type="number" class="weight-edit" value="${lift.weight}" 
+                    onchange="updateWeight('${day}', '${tier}', this.value)" step="2.5"> KG
+                </span>
+            </div>
+            <div class="btn-group">
+                <button onclick="handleResult('${day}', '${tier}', 'fail')">FAIL</button>
+                <button onclick="handleResult('${day}', '${tier}', 'success')">COMPLETE</button>
+            </div>
+        `;
+        app.appendChild(card);
+    });
+}
+
+function hardReset() {
+    if(confirm(">> EXECUTE FACTORY RESET? ALL DATA WILL BE LOST.")) {
+        localStorage.removeItem('gzclpData_kg');
+        location.reload();
+    }
+}
+
+// Init
+renderWorkout();
+</script>
+</body>
+</html>
